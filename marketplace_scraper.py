@@ -19,6 +19,7 @@ def crawl_facebook_marketplace(city: str, query: str, max_price: int):
         page = browser.new_page()
         page.goto(marketplace_url)
     
+        #ändra denna
         time.sleep(1)
 
         try:
@@ -51,6 +52,7 @@ def crawl_facebook_marketplace(city: str, query: str, max_price: int):
         press_button('Tillämpa', page)
 
         logger.info("Clicked on 'Tillämpa' button.")
+        #ändra denna
         time.sleep(3)
 
         html = page.content()
@@ -66,37 +68,15 @@ def crawl_facebook_marketplace(city: str, query: str, max_price: int):
 
         for listing in listings:
             try:
-                # Get the item image
-                image = listing.find('img', class_='x168nmei x13lgxp2 x5pf9jr xo71vjh xt7dq6l xl1xv1r x6ikm8r x10wlt62 xh8yej3')
-                image_src = image['src'] if image else None
-                
-                # Get the item title
-                title = listing.find('span', class_='x1lliihq x6ikm8r x10wlt62 x1n2onr6')
-                title_text = title.text if title else 'No Title'
-                
-                # Get the item price
-                price = listing.find('span', class_='x193iq5w xeuugli x13faqbe x1vvkbs xlh3980 xvmahel x1n0sxbx x1lliihq x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x4zkp8e x3x7a5m x1lkfr7t x1lbecb7 x1s688f xzsf02u')
-                price_text = price.text if price else 'No Price'
-                
-                
-                # Get the item URL
-                post_url = listing.find('a', class_='x1i10hfl xjbqb8w x1ejq31n xd10rxx x1sy0etr x17r0tee x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz x1heor9g xkrqix3 x1sur9pj x1s688f x1lku1pv')
-                post_url_href = post_url['href'] if post_url else 'No URL'
-                
-                # Get the item location
-                location = listing.find('span', class_='x1lliihq x6ikm8r x10wlt62 x1n2onr6 xlyipyv xuxw1ft')
-                location_text = location.text if location else 'No Location'
-                
-                
                 parsed.append({
-                    'image': image_src,
-                    'title': title_text,
-                    'price': price_text,
-                    'post_url': post_url_href,
-                    'location': location_text
+                    'image': extract_image(listing),
+                    'title': extract_title(listing),
+                    'price': extract_price(listing),
+                    'post_url': extract_post_url(listing),
+                    'location': extract_location(listing)
                 })
             except Exception as e:
-                logger.warning(f"Error processing listing: {e}")
+                logger.error(f"Error processing listing: {e}")
 
         # Close the browser.
         try:
@@ -115,3 +95,23 @@ def crawl_facebook_marketplace(city: str, query: str, max_price: int):
                 'link': item['post_url']
             })
         return result
+
+def extract_image(listing):
+    image = listing.find('img', class_='x168nmei x13lgxp2 x5pf9jr xo71vjh xt7dq6l xl1xv1r x6ikm8r x10wlt62 xh8yej3')
+    return image['src'] if image else None
+
+def extract_title(listing):
+    title = listing.find('span', class_='x1lliihq x6ikm8r x10wlt62 x1n2onr6')
+    return title.text if title else 'No Title'
+
+def extract_price(listing):
+    price = listing.find('span', class_='x193iq5w xeuugli x13faqbe x1vvkbs xlh3980 xvmahel x1n0sxbx x1lliihq x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x4zkp8e x3x7a5m x1lkfr7t x1lbecb7 x1s688f xzsf02u')
+    return price.text if price else 'No Price'
+
+def extract_post_url(listing):
+    post_url = listing.find('a', class_='x1i10hfl xjbqb8w x1ejq31n xd10rxx x1sy0etr x17r0tee x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz x1heor9g xkrqix3 x1sur9pj x1s688f x1lku1pv')
+    return post_url['href'] if post_url else 'No URL'
+
+def extract_location(listing):
+    location = listing.find('span', class_='x1lliihq x6ikm8r x10wlt62 x1n2onr6 xlyipyv xuxw1ft')
+    return location.text if location else 'No Location'
