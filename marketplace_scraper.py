@@ -1,5 +1,6 @@
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
+import pandas as pd
 import time
 import logging
 
@@ -68,12 +69,25 @@ def crawl_facebook_marketplace(city: str, query: str, max_price: int):
 
         for listing in listings:
             try:
+                title = extract_title(listing)
+                price = extract_price(listing)
+                post_url = extract_post_url(listing)
+                location = extract_location(listing)
+                image = extract_image(listing)
+
+                # Kontrollera att de viktigaste uppgifterna finns
+                if not title or not price or not post_url:
+                    logger.warning(f"Skipping listing due to missing data: title={title}, price={price}, post_url={post_url}")
+                    continue  # Hoppa över denna annons
+
+                logger.info(f"Processing listing: {title}")
+
                 parsed.append({
-                    'image': extract_image(listing),
-                    'title': extract_title(listing),
-                    'price': extract_price(listing),
-                    'post_url': extract_post_url(listing),
-                    'location': extract_location(listing)
+                    'image': image,
+                    'title': title,
+                    'price': price,
+                    'post_url': post_url,
+                    'location': location
                 })
             except Exception as e:
                 logger.error(f"Error processing listing: {e}")
@@ -94,7 +108,27 @@ def crawl_facebook_marketplace(city: str, query: str, max_price: int):
                 'image': item['image'],
                 'link': item['post_url']
             })
+        save_to_excel(result)
         return result
+
+def save_to_excel(data, filename="listings.xlsx"):
+    try:
+        # Försök läsa in befintlig fil
+        df = pd.read_excel(filename, engine="openpyxl")
+    except FileNotFoundError:
+        # Om filen inte finns, skapa en ny DataFrame
+        df = pd.DataFrame(columns=["name", "price", "location", "title", "image", "link"])
+
+    # Skapa en DataFrame från den nya datan
+    new_df = pd.DataFrame(data)
+
+    # Slå ihop med befintlig data (om några annonser redan finns)
+    df = pd.concat([df, new_df], ignore_index=True)
+
+    # Spara till Excel
+    df.to_excel(filename, index=False, engine="openpyxl")
+    logger.info(f"Sparade {len(new_df)} annonser i '{filename}'")
+
 
 def extract_image(listing):
     image = listing.find('img', class_='x168nmei x13lgxp2 x5pf9jr xo71vjh xt7dq6l xl1xv1r x6ikm8r x10wlt62 xh8yej3')
@@ -102,16 +136,16 @@ def extract_image(listing):
 
 def extract_title(listing):
     title = listing.find('span', class_='x1lliihq x6ikm8r x10wlt62 x1n2onr6')
-    return title.text if title else 'No Title'
+    return title.text if title else None
 
 def extract_price(listing):
     price = listing.find('span', class_='x193iq5w xeuugli x13faqbe x1vvkbs xlh3980 xvmahel x1n0sxbx x1lliihq x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x4zkp8e x3x7a5m x1lkfr7t x1lbecb7 x1s688f xzsf02u')
-    return price.text if price else 'No Price'
+    return price.text if price else None
 
 def extract_post_url(listing):
     post_url = listing.find('a', class_='x1i10hfl xjbqb8w x1ejq31n xd10rxx x1sy0etr x17r0tee x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz x1heor9g xkrqix3 x1sur9pj x1s688f x1lku1pv')
-    return post_url['href'] if post_url else 'No URL'
+    return post_url['href'] if post_url else None
 
 def extract_location(listing):
     location = listing.find('span', class_='x1lliihq x6ikm8r x10wlt62 x1n2onr6 xlyipyv xuxw1ft')
-    return location.text if location else 'No Location'
+    return location.text if location else None
