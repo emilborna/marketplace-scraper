@@ -129,6 +129,15 @@ def save_to_excel(data, filename="listings.xlsx"):
     df.to_excel(filename, index=False, engine="openpyxl")
     logger.info(f"Sparade {len(new_df)} annonser i '{filename}'")
 
+def clear_excel(filename="listings.xlsx"):
+    # Skapa en tom DataFrame med samma kolumner
+    df = pd.DataFrame(columns=["name", "price", "location", "title", "image", "link"])
+    
+    # Spara den tomma DataFrame till Excel-filen
+    df.to_excel(filename, index=False, engine="openpyxl")
+    logger.info(f"Rensade innehållet i '{filename}' och sparade en tom fil.")
+
+
 
 def extract_image(listing):
     image = listing.find('img', class_='x168nmei x13lgxp2 x5pf9jr xo71vjh xt7dq6l xl1xv1r x6ikm8r x10wlt62 xh8yej3')

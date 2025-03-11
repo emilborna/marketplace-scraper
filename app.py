@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from marketplace_scraper import crawl_facebook_marketplace
+from marketplace_scraper import crawl_facebook_marketplace, clear_excel
 import logging
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -29,6 +29,10 @@ app.add_middleware(
 @app.get("/crawl_facebook_marketplace")
 def crawl_facebook_marketplace_endpoint(city: str, query: str, max_price: int):
     return crawl_facebook_marketplace(city, query, max_price)
+
+@app.get("/clear")
+def clear():
+    return clear_excel()
 
 if __name__ == "__main__":
     import uvicorn
