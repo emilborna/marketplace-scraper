@@ -6,20 +6,6 @@ import logging
 import requests
 
 WEBHOOK_URL = "https://discord.com/api/webhooks/1349294617786454078/jxB7hXIoiLVrbhj4ATl7I_MQTR3-u2OWvsUzwtVzUN7pY7L4bozq4P8oS5Bf79L6e4Ju"
-MESSAGE = "Test"
-
-data = {
-    "content": MESSAGE,  # Själva meddelandet
-    "username": "Marketplace Bot"  # Namnet som visas i Discord
-}
-
-def send_discord_message():
-    response = requests.post(WEBHOOK_URL, json=data)
-
-    if response.status_code == 204:
-        print("Meddelandet skickades!")
-    else:
-        print("Fel vid skickande:", response.status_code, response.text)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -121,7 +107,6 @@ def crawl_facebook_marketplace(city: str, query: str, max_price: int):
                 'link': item['post_url']
             })
         save_to_excel(result)
-        send_discord_message()
         return result
 
 def save_to_excel(data, filename="listings.xlsx"):
