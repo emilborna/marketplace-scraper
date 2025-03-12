@@ -3,14 +3,26 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import time
 import logging
+import requests
+
+WEBHOOK_URL = "https://discord.com/api/webhooks/1349294617786454078/jxB7hXIoiLVrbhj4ATl7I_MQTR3-u2OWvsUzwtVzUN7pY7L4bozq4P8oS5Bf79L6e4Ju"
+MESSAGE = "Test"
+
+data = {
+    "content": MESSAGE,  # Själva meddelandet
+    "username": "Marketplace Bot"  # Namnet som visas i Discord
+}
+
+def send_discord_message():
+    response = requests.post(WEBHOOK_URL, json=data)
+
+    if response.status_code == 204:
+        print("Meddelandet skickades!")
+    else:
+        print("Fel vid skickande:", response.status_code, response.text)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-def press_button(button, page):
-    close_button = page.wait_for_selector(f'div[aria-label="{button}"]', timeout=5000)  # Timeout på 5 sekunder
-    close_button.click()
-                 
 
 def crawl_facebook_marketplace(city: str, query: str, max_price: int):
     marketplace_url = f'https://www.facebook.com/marketplace/category/search/?query={query}&maxPrice={max_price}'
@@ -109,6 +121,7 @@ def crawl_facebook_marketplace(city: str, query: str, max_price: int):
                 'link': item['post_url']
             })
         save_to_excel(result)
+        send_discord_message()
         return result
 
 def save_to_excel(data, filename="listings.xlsx"):
@@ -137,7 +150,9 @@ def clear_excel(filename="listings.xlsx"):
     df.to_excel(filename, index=False, engine="openpyxl")
     logger.info(f"Rensade innehållet i '{filename}' och sparade en tom fil.")
 
-
+def press_button(button, page):
+    close_button = page.wait_for_selector(f'div[aria-label="{button}"]', timeout=5000)  # Timeout på 5 sekunder
+    close_button.click()
 
 def extract_image(listing):
     image = listing.find('img', class_='x168nmei x13lgxp2 x5pf9jr xo71vjh xt7dq6l xl1xv1r x6ikm8r x10wlt62 xh8yej3')
