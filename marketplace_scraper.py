@@ -10,7 +10,10 @@ WEBHOOK_URL = "https://discord.com/api/webhooks/1349294617786454078/jxB7hXIoiLVr
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+listings_URLs = []
+
 def crawl_facebook_marketplace(city: str, query: str, max_price: int):
+    listings_URLs = extract_links()
     marketplace_url = f'https://www.facebook.com/marketplace/category/search/?query={query}&maxPrice={max_price}'
 
     with sync_playwright() as p:
@@ -106,8 +109,39 @@ def crawl_facebook_marketplace(city: str, query: str, max_price: int):
                 'image': item['image'],
                 'link': item['post_url']
             })
-        save_to_excel(result)
+            if item['post_url'] not in listings_URLs:
+                print(item['post_url'])
+                send_listing_to_discord(item['title'], item['price'], item['location'], item['post_url'], item['image'])
+                add_URL_to_listings(item['post_url'])
+                save_to_excel(result)
         return result
+    
+def send_listing_to_discord(TITLE, PRICE, LOCATION, URL, IMAGE):
+    data = {
+        "username": "Marketplace Bot",
+        "embeds": [{
+            "title": "Ny annons!",
+            "description": "En ny annons har dykt upp på Marketplace.",
+            "color": 16711680,  # Röd färg
+            "fields": [
+                {"name": "Titel", "value": TITLE, "inline": True},
+                {"name": "Pris", "value": PRICE, "inline": True},
+                {"name": "Plats", "value": LOCATION, "inline": False}
+            ],
+            "url": "https://www.facebook.com" + URL,  # Fullständig URL här
+            "image": {"url": IMAGE}  # Visar en bild i inlägget
+        }]
+    }
+
+    print(f"Skickar följande data till Discord: {data}")  # Lägg till denna logg för att inspektera datan
+
+    response = requests.post(WEBHOOK_URL, json=data)
+
+    if response.status_code == 204:
+        print("✅ Meddelandet skickades!")
+    else:
+        print(f"❌ Fel vid skickande: {response.status_code} {response.text}")
+
 
 def save_to_excel(data, filename="listings.xlsx"):
     try:
@@ -127,6 +161,23 @@ def save_to_excel(data, filename="listings.xlsx"):
     df.to_excel(filename, index=False, engine="openpyxl")
     logger.info(f"Sparade {len(new_df)} annonser i '{filename}'")
 
+def extract_links(filename="listings.xlsx"):
+    try:
+        df = pd.read_excel(filename, engine="openpyxl")  # Läser Excel-filen
+        if "link" not in df.columns:
+            print("❌ Kolumnen 'link' saknas i filen!")
+            return []
+
+        links = df["link"].dropna().tolist()  # Tar bort tomma värden och gör en lista
+        return links
+
+    except FileNotFoundError:
+        print(f"❌ Filen '{filename}' hittades inte!")
+        return []
+    except Exception as e:
+        print(f"❌ Fel vid läsning av Excel: {e}")
+        return []
+
 def clear_excel(filename="listings.xlsx"):
     # Skapa en tom DataFrame med samma kolumner
     df = pd.DataFrame(columns=["name", "price", "location", "title", "image", "link"])
@@ -134,6 +185,9 @@ def clear_excel(filename="listings.xlsx"):
     # Spara den tomma DataFrame till Excel-filen
     df.to_excel(filename, index=False, engine="openpyxl")
     logger.info(f"Rensade innehållet i '{filename}' och sparade en tom fil.")
+
+def add_URL_to_listings(URL):
+    listings_URLs.append(URL)
 
 def press_button(button, page):
     close_button = page.wait_for_selector(f'div[aria-label="{button}"]', timeout=5000)  # Timeout på 5 sekunder
