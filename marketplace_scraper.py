@@ -4,8 +4,11 @@ import pandas as pd
 import time
 import logging
 import requests
+import os
+from dotenv import load_dotenv
 
-WEBHOOK_URL = "https://discord.com/api/webhooks/1349294617786454078/jxB7hXIoiLVrbhj4ATl7I_MQTR3-u2OWvsUzwtVzUN7pY7L4bozq4P8oS5Bf79L6e4Ju"
+load_dotenv()
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -62,7 +65,7 @@ def crawl_facebook_marketplace(city: str, query: str, max_price: int):
         parsed = []
 
         listings = soup.find_all('div', class_='x9f619 x78zum5 x1r8uery xdt5ytf x1iyjqo2 xs83m0k x1e558r4 x150jy0e x1iorvi4 xjkvuk6 xnpuxes x291uyu x1uepa24')
-    
+
         if not listings:
             logger.warning("No listings found with the given class!")
         else:
